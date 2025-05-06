@@ -519,7 +519,18 @@ if Code.ensure_loaded?(Ecto) do
             |> :erlang.term_to_iovec()
             |> :erlang.md5()
           else
-            Enum.map(primary_keys, &Map.get(record, &1))
+            primary_key_values = Enum.map(primary_keys, &Map.get(record, &1))
+
+            Enum.each(Enum.zip(primary_keys, primary_key_values), fn {key, value} ->
+              if is_nil(value) do
+                raise """
+                Key #{inspect(key)} is nil for record #{inspect(record)}.
+                Make sure to query all the fields that make up the primary key.
+                """
+              end
+            end)
+
+            primary_key_values
           end
 
         queryable = chase_down_queryable([assoc_field], schema)
